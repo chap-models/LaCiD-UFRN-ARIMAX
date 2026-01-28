@@ -1,0 +1,35 @@
+# Virtual environments
+.venv/
+__pycache__/
+*.py[cod]
+
+# R artifacts
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.rds
+
+# Output files (generated)
+output/*.rds
+output/*.csv
+!output/.gitkeep
+
+# Keep input example data
+!input/*.csv
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Original sprint code (keep for reference but not essential for CHAP)
+# Uncomment to ignore: original/
+
+# Data files (too large for git)
+data/
+
+# Environment files
+.env

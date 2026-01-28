@@ -1,0 +1,48 @@
+name: LaCiD_UFRN_ARIMAX
+
+target: disease_cases
+required_covariates:
+  - population
+  - mean_temperature
+supported_period_type: any
+allow_free_additional_continuous_covariates: false
+
+meta_data:
+  display_name: LaCiD UFRN ARIMAX Model
+  description: >
+    An ARIMAX (AutoRegressive Integrated Moving Average with eXogenous variables) model
+    for disease prediction. Uses Box-Cox transformation and lagged features for
+    temperature and case counts. Developed for the 2025 Infodengue-Mosqlimate Sprint.
+  author: LaCiD Team (Marcus A. Nunes, Eliardo G. Costa, Marcelo Bourguignon, Thiago Valentim Marques, Thiago Zaqueu Lima)
+  author_assessed_status: yellow
+  organization: Federal University of Rio Grande do Norte (UFRN)
+  organization_logo_url: https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Bras%C3%A3o_da_UFRN.svg/1200px-Bras%C3%A3o_da_UFRN.svg.png
+  contact_email: marcus.nunes@ufrn.br
+  citation_info: >
+    LaCiD UFRN Team. 2025. "ARIMAX model for dengue forecasting".
+    Federal University of Rio Grande do Norte.
+    Based on Xavier et al. (2025), Trends in Computational and Applied Mathematics.
+
+adapters:
+  disease_cases: disease_cases
+  population: population
+  mean_temperature: mean_temperature
+  time_period: time_period
+  location: location
+
+docker_env:
+  image: ghcr.io/chap-models/lacid-ufrn-arimax:latest
+
+entry_points:
+  train:
+    parameters:
+      train_data: path
+      model: str
+    command: "Rscript train.R {train_data} {model}"
+  predict:
+    parameters:
+      historic_data: path
+      future_data: path
+      model: str
+      out_file: path
+    command: "Rscript predict.R {model} {historic_data} {future_data} {out_file}"
