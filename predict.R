@@ -52,46 +52,56 @@ predict_chap <- function(model_path, historic_data_path, future_data_path, predi
     loc_historic <- loc_historic[order(loc_historic$time_period), ]
 
     # Prepare lagged features for prediction
-    # Use last values from historic data for initial lags
-    last_cases <- model_info$last_cases
-    last_temp <- model_info$last_temp
+    # Use historic data to compute lags (important for proper backtesting)
 
-    # Add 1 if needed (matching training transformation)
-    if (any(last_cases == 0)) {
-      last_cases <- last_cases + 1
+    # Get all historic cases and add 1 if there are zeros
+    hist_cases <- loc_historic$disease_cases
+    if (any(hist_cases == 0, na.rm = TRUE)) {
+      hist_cases <- hist_cases + 1
     }
 
-    # Box-Cox transform
-    last_cases_bc <- BoxCox(last_cases, lambda)
+    # Box-Cox transform all historic cases
+    hist_cases_bc <- BoxCox(hist_cases, lambda)
 
+    # Get historic temperatures
+    hist_temp <- loc_historic$mean_temperature
+
+    # Build extended series for dynamic rolling mean calculation
+    # Start with historic data, then extend for future predictions
+    n_hist <- length(hist_cases_bc)
     n_future <- nrow(loc_future)
+    k <- 12  # rolling window size (as in original code)
+
+    # Extended case series (will be filled with rolling means for future)
+    extended_cases_bc <- c(hist_cases_bc, rep(NA, n_future))
+
+    # Extended temp series
+    extended_temp <- c(hist_temp, loc_future$mean_temperature)
+
+    # Fill future case values with dynamic rolling mean (as in original target 3)
+    for (j in (n_hist + 1):(n_hist + n_future)) {
+      start_idx <- max(1, j - k)
+      extended_cases_bc[j] <- mean(extended_cases_bc[start_idx:(j-1)], na.rm = TRUE)
+    }
+
+    # Fill any missing future temps with dynamic rolling mean
+    for (j in (n_hist + 1):(n_hist + n_future)) {
+      if (is.na(extended_temp[j])) {
+        start_idx <- max(1, j - k)
+        extended_temp[j] <- mean(extended_temp[start_idx:(j-1)], na.rm = TRUE)
+      }
+    }
+
+    # Now construct xreg_future using proper lags from extended series
     xreg_future <- matrix(NA, nrow = n_future, ncol = 4)
     colnames(xreg_future) <- c("cases_lag1", "cases_lag2", "cases_lag3", "temp_lag1")
 
-    # Fill in lagged features
-    # For simplicity, use rolling averages for future lags (as in original code)
     for (i in 1:n_future) {
-      if (i == 1) {
-        xreg_future[i, "cases_lag1"] <- last_cases_bc[3]
-        xreg_future[i, "cases_lag2"] <- last_cases_bc[2]
-        xreg_future[i, "cases_lag3"] <- last_cases_bc[1]
-        xreg_future[i, "temp_lag1"] <- last_temp
-      } else if (i == 2) {
-        xreg_future[i, "cases_lag1"] <- xreg_future[i-1, "cases_lag1"]  # approximate
-        xreg_future[i, "cases_lag2"] <- last_cases_bc[3]
-        xreg_future[i, "cases_lag3"] <- last_cases_bc[2]
-        xreg_future[i, "temp_lag1"] <- loc_future$mean_temperature[i-1]
-      } else if (i == 3) {
-        xreg_future[i, "cases_lag1"] <- xreg_future[i-1, "cases_lag1"]
-        xreg_future[i, "cases_lag2"] <- xreg_future[i-2, "cases_lag1"]
-        xreg_future[i, "cases_lag3"] <- last_cases_bc[3]
-        xreg_future[i, "temp_lag1"] <- loc_future$mean_temperature[i-1]
-      } else {
-        xreg_future[i, "cases_lag1"] <- xreg_future[i-1, "cases_lag1"]
-        xreg_future[i, "cases_lag2"] <- xreg_future[i-2, "cases_lag1"]
-        xreg_future[i, "cases_lag3"] <- xreg_future[i-3, "cases_lag1"]
-        xreg_future[i, "temp_lag1"] <- loc_future$mean_temperature[i-1]
-      }
+      idx <- n_hist + i  # position in extended series
+      xreg_future[i, "cases_lag1"] <- extended_cases_bc[idx - 1]
+      xreg_future[i, "cases_lag2"] <- extended_cases_bc[idx - 2]
+      xreg_future[i, "cases_lag3"] <- extended_cases_bc[idx - 3]
+      xreg_future[i, "temp_lag1"] <- extended_temp[idx - 1]
     }
 
     # Generate predictions with samples

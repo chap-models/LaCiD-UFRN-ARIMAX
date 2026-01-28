@@ -41,9 +41,7 @@ train_chap <- function(train_data_path, model_path) {
     if (!is.null(model)) {
       models[[as.character(loc)]] <- list(
         model = model,
-        lambda = lambda,
-        last_cases = tail(loc_df$disease_cases, 3),
-        last_temp = tail(loc_df$mean_temperature, 1)
+        lambda = lambda
       )
       cat("  Model trained successfully\n")
     } else {
