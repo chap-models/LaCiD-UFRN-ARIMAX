@@ -31,7 +31,7 @@ adapters:
   location: location
 
 docker_env:
-  image: ghcr.io/dhis2-chap/docker_r_forecast:latest
+  image: ghcr.io/dhis2-chap/r_lacid_arimax
 
 entry_points:
   train:
