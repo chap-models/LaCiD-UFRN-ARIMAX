@@ -129,16 +129,18 @@ predict_chap <- function(model_path, historic_data_path, future_data_path, predi
   cat("Prediction complete.\n")
 }
 
-# Command line interface
-args <- commandArgs(trailingOnly = TRUE)
+# Command line interface - only run when called directly
+if (!interactive() && sys.nframe() == 0) {
+  args <- commandArgs(trailingOnly = TRUE)
 
-if (length(args) >= 4) {
-  model_path <- args[1]
-  historic_data_path <- args[2]
-  future_data_path <- args[3]
-  predictions_path <- args[4]
-  predict_chap(model_path, historic_data_path, future_data_path, predictions_path)
-} else {
-  cat("Usage: Rscript predict.R <model.rds> <historic_data.csv> <future_data.csv> <predictions.csv>\n")
-  quit(status = 1)
+  if (length(args) >= 4) {
+    model_path <- args[1]
+    historic_data_path <- args[2]
+    future_data_path <- args[3]
+    predictions_path <- args[4]
+    predict_chap(model_path, historic_data_path, future_data_path, predictions_path)
+  } else {
+    cat("Usage: Rscript predict.R <model.rds> <historic_data.csv> <future_data.csv> <predictions.csv>\n")
+    quit(status = 1)
+  }
 }

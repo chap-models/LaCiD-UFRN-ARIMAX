@@ -57,14 +57,16 @@ train_chap <- function(train_data_path, model_path) {
   cat("Training complete.\n")
 }
 
-# Command line interface
-args <- commandArgs(trailingOnly = TRUE)
+# Command line interface - only run when called directly
+if (!interactive() && sys.nframe() == 0) {
+  args <- commandArgs(trailingOnly = TRUE)
 
-if (length(args) >= 2) {
-  train_data_path <- args[1]
-  model_path <- args[2]
-  train_chap(train_data_path, model_path)
-} else {
-  cat("Usage: Rscript train.R <train_data.csv> <model_output.rds>\n")
-  quit(status = 1)
+  if (length(args) >= 2) {
+    train_data_path <- args[1]
+    model_path <- args[2]
+    train_chap(train_data_path, model_path)
+  } else {
+    cat("Usage: Rscript train.R <train_data.csv> <model_output.rds>\n")
+    quit(status = 1)
+  }
 }
