@@ -12,7 +12,7 @@ meta_data:
   description: >
     An ARIMAX (AutoRegressive Integrated Moving Average with eXogenous variables) model
     for disease prediction. Uses Box-Cox transformation and lagged features for
-    temperature and case counts. Developed for the 2025 Infodengue-Mosqlimate Sprint.
+    temperature and case counts. Originally developed for the 2025 Infodengue-Mosqlimate Sprint.
   author: LaCiD Team (Marcus A. Nunes, Eliardo G. Costa, Marcelo Bourguignon, Thiago Valentim Marques, Thiago Zaqueu Lima)
   author_assessed_status: yellow
   organization: Federal University of Rio Grande do Norte (UFRN)
@@ -31,7 +31,7 @@ adapters:
   location: location
 
 docker_env:
-  image: ghcr.io/chap-models/lacid-ufrn-arimax:latest
+  image: ghcr.io/dhis2-chap/docker_r_forecast:latest
 
 entry_points:
   train:

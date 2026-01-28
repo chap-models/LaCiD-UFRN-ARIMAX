@@ -8,31 +8,17 @@ This is a [CHAP-compatible](https://github.com/dhis2-chap/chap-core) version of 
 
 The model uses ARIMAX (AutoRegressive Integrated Moving Average with eXogenous variables) time series modeling to predict weekly disease cases, incorporating temperature as an exogenous covariate.
 
-## Quick Start
-
-```bash
-# With Docker (recommended)
-docker build -t lacid-arimax .
-docker run -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output lacid-arimax
-
-# Or with local R installation
-Rscript -e "install.packages(c('forecast', 'data.table'))"
-Rscript isolated_run.R
-```
-
 ## Repository Structure
 
 ```
 ├── MLproject              # CHAP integration configuration
-├── Dockerfile             # R environment definition
 ├── train.R                # Training script
 ├── predict.R              # Prediction script
 ├── lib.R                  # Shared utility functions
 ├── isolated_run.R         # Local testing without CHAP
-├── input/                 # Example data
-│   ├── trainData.csv
-│   └── futureClimateData.csv
-├── output/                # Generated models and predictions
+├── example_data/          # Example data
+│   ├── training_data.csv
+│   └── future_data.csv
 └── original/              # Original sprint code (reference)
 ```
 
@@ -59,7 +45,7 @@ Rscript isolated_run.R
 
 ## CHAP Data Format
 
-**Training data** (`trainData.csv`):
+**Training data** (`training_data.csv`):
 - `time_period` - Week identifier (e.g., `2023W01`)
 - `location` - Spatial identifier
 - `disease_cases` - Target variable
@@ -67,7 +53,7 @@ Rscript isolated_run.R
 - `mean_temperature` - Temperature covariate
 - `rainfall` - Rainfall covariate (present but not used by this model)
 
-**Future data** (`futureClimateData.csv`):
+**Future data** (`future_data.csv`):
 - Same columns as training, without `disease_cases`
 
 **Output** (`predictions.csv`):
@@ -78,24 +64,18 @@ Rscript isolated_run.R
 ### Local Testing
 
 ```bash
+# Install R dependencies
+Rscript -e "install.packages(c('forecast'))"
+
+# Run isolated test
 Rscript isolated_run.R
 ```
 
 ### Train and Predict Separately
 
 ```bash
-Rscript train.R input/trainData.csv output/model.rds
-Rscript predict.R output/model.rds input/trainData.csv input/futureClimateData.csv output/predictions.csv
-```
-
-### With Docker
-
-```bash
-docker build -t lacid-arimax .
-docker run -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output lacid-arimax \
-    Rscript train.R input/trainData.csv output/model.rds
-docker run -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output lacid-arimax \
-    Rscript predict.R output/model.rds input/trainData.csv input/futureClimateData.csv output/predictions.csv
+Rscript train.R example_data/training_data.csv example_data/model.rds
+Rscript predict.R example_data/model.rds example_data/training_data.csv example_data/future_data.csv example_data/predictions.csv
 ```
 
 ## Original Work
