@@ -1,93 +1,115 @@
-# LaCiD UFRN ARIMAX Model
+# LaCiD-UFRN-ARIMAX - CHAP Compatible
 
-A CHAP-compatible ARIMAX (AutoRegressive Integrated Moving Average with eXogenous variables) model for disease prediction.
+[![R](https://img.shields.io/badge/R-≥4.0-blue.svg)](https://www.r-project.org/)
 
 ## Overview
 
-This model was developed by the [LaCiD](https://lacid.ccet.ufrn.br/) (Laboratório de Ciência de Dados) team at Federal University of Rio Grande do Norte (UFRN) for the 2025 Infodengue-Mosqlimate Dengue Forecast Sprint.
+This is a [CHAP-compatible](https://github.com/dhis2-chap/chap-core) version of an ARIMAX model originally developed for dengue prediction in Brazilian states. The original model was created for the [Mosqlimate Sprint competition](https://api.mosqlimate.org/vis/dashboard/?dashboard=sprint) by the LaCiD team at Federal University of Rio Grande do Norte (UFRN).
 
-It has been adapted to be compatible with [CHAP](https://github.com/dhis2-chap/chap-core) (Climate Health Analytics Platform).
+The model uses ARIMAX (AutoRegressive Integrated Moving Average with eXogenous variables) time series modeling to predict weekly disease cases, incorporating temperature as an exogenous covariate.
 
-## Team
+## Quick Start
 
-* [Marcus A. Nunes](https://lacid.ccet.ufrn.br/author/marcus-a.-nunes/) - Federal University of Rio Grande do Norte
-* [Eliardo G. Costa](https://lacid.ccet.ufrn.br/author/eliardo-g.-costa/) - Federal University of Rio Grande do Norte
-* [Marcelo Bourguignon](https://lacid.ccet.ufrn.br/author/marcelo-bourguignon/) - Federal University of Rio Grande do Norte
-* [Thiago Valentim Marques](https://lacid.ccet.ufrn.br/author/thiago-valentim-marques/) - Federal University of Rio Grande do Norte
-* [Thiago Zaqueu Lima](https://lacid.ccet.ufrn.br/author/thiago-zaqueu-lima/) - Federal University of Rio Grande do Norte
+```bash
+# With Docker (recommended)
+docker build -t lacid-arimax .
+docker run -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output lacid-arimax
 
-## Model Description
+# Or with local R installation
+Rscript -e "install.packages(c('forecast', 'data.table'))"
+Rscript isolated_run.R
+```
 
-### Algorithm
-- Uses `auto.arima()` from the R `forecast` package
-- Trains separate ARIMAX models per location
-- Applies Box-Cox transformation for variance stabilization
-- Uses lagged features: disease_cases (lags 1-3), mean_temperature (lag 1)
-
-### Required Data
-- `disease_cases` - Target variable (case counts)
-- `mean_temperature` - Temperature covariate
-- `population` - Population count (required by CHAP)
-
-### Output
-- Generates probabilistic predictions with 1000 Monte Carlo samples
-- Output columns: `time_period`, `location`, `sample_0` through `sample_999`
-
-## CHAP Repository Structure
+## Repository Structure
 
 ```
 ├── MLproject              # CHAP integration configuration
+├── Dockerfile             # R environment definition
 ├── train.R                # Training script
 ├── predict.R              # Prediction script
-├── isolated_run.R         # Local testing without CHAP
 ├── lib.R                  # Shared utility functions
-├── Dockerfile             # R environment with forecast package
-├── input/                 # Example data directory
-│   ├── trainData.csv      # Example training data
-│   └── futureClimateData.csv  # Example future data
-├── output/                # Output directory for models/predictions
-└── original/              # Original sprint code (reference only)
+├── isolated_run.R         # Local testing without CHAP
+├── input/                 # Example data
+│   ├── trainData.csv
+│   └── futureClimateData.csv
+├── output/                # Generated models and predictions
+└── original/              # Original sprint code (reference)
 ```
+
+## Model Methodology
+
+### ARIMAX Configuration
+
+- **Model selection**: `auto.arima()` with stepwise search
+- **Seasonal**: Weekly periodicity (frequency = 52)
+- **Transformation**: Box-Cox for variance stabilization
+- **Exogenous variables**: Lagged cases (1-3 weeks), lagged temperature (1 week)
+- **Training**: Separate model fitted per location
+
+### Features Used
+
+- `disease_cases` - Target variable (with Box-Cox transformation)
+- `mean_temperature` - Temperature covariate (lagged)
+- Autoregressive lags of transformed cases
+
+### Uncertainty Quantification
+
+- 1000 Monte Carlo simulations per prediction
+- Full predictive distribution available via sample columns
+
+## CHAP Data Format
+
+**Training data** (`trainData.csv`):
+- `time_period` - Week identifier (e.g., `2023W01`)
+- `location` - Spatial identifier
+- `disease_cases` - Target variable
+- `population` - Population (required by CHAP)
+- `mean_temperature` - Temperature covariate
+- `rainfall` - Rainfall covariate (present but not used by this model)
+
+**Future data** (`futureClimateData.csv`):
+- Same columns as training, without `disease_cases`
+
+**Output** (`predictions.csv`):
+- `time_period`, `location`, `sample_0` through `sample_999`
 
 ## Usage
 
-### With Docker (recommended)
+### Local Testing
 
 ```bash
-# Build Docker image
-docker build -t lacid-arimax .
-
-# Run isolated test
-docker run -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output lacid-arimax
-
-# Or run train and predict separately
-docker run -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output lacid-arimax \
-    Rscript train.R input/trainData.csv output/model.rds
-
-docker run -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output lacid-arimax \
-    Rscript predict.R output/model.rds input/trainData.csv input/futureClimateData.csv output/predictions.csv
+Rscript isolated_run.R
 ```
 
-### Local R Installation
-
-Requirements: R >= 4.0 with `forecast` and `data.table` packages.
+### Train and Predict Separately
 
 ```bash
-# Install dependencies
-Rscript -e "install.packages(c('forecast', 'data.table'))"
-
-# Run isolated test
-Rscript isolated_run.R
-
-# Or run separately
 Rscript train.R input/trainData.csv output/model.rds
 Rscript predict.R output/model.rds input/trainData.csv input/futureClimateData.csv output/predictions.csv
 ```
 
-## References
+### With Docker
 
-Xavier, L. L., Pessanha, J. F. M., Honório, N. A., Ribeiro, M. S., Moreira, D. M., & Peiter, P. C. (2025). A incidência da dengue explicada por variáveis climáticas em municípios da Região Metropolitana do Rio de Janeiro. *Trends in Computational and Applied Mathematics*, 26, e01476. [https://doi.org/10.5540/tcam.2025.026.e01476](https://doi.org/10.5540/tcam.2025.026.e01476)
+```bash
+docker build -t lacid-arimax .
+docker run -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output lacid-arimax \
+    Rscript train.R input/trainData.csv output/model.rds
+docker run -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output lacid-arimax \
+    Rscript predict.R output/model.rds input/trainData.csv input/futureClimateData.csv output/predictions.csv
+```
 
-## License
+## Original Work
 
-GNU General Public License v3 (GPL-3.0)
+This model is adapted from the [LaCiD/UFRN submission](https://github.com/lacidufrn/infodengue_sprint_2025) to the 2025 Infodengue-Mosqlimate Dengue Forecast Sprint. The original implementation predicted dengue cases across 26 Brazilian states using data from the [InfoDengue surveillance system](https://info.dengue.mat.br/).
+
+### Original Team
+
+- Marcus A. Nunes
+- Eliardo G. Costa
+- Marcelo Bourguignon
+- Thiago Valentim Marques
+- Thiago Zaqueu Lima
+
+### Reference
+
+Xavier, L. L., et al. (2025). "A incidência da dengue explicada por variáveis climáticas em municípios da Região Metropolitana do Rio de Janeiro." *Trends in Computational and Applied Mathematics*, 26, e01476. [https://doi.org/10.5540/tcam.2025.026.e01476](https://doi.org/10.5540/tcam.2025.026.e01476)
